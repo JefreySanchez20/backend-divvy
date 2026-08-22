@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-divvy}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-divvy}
+      POSTGRES_DB: ${DB_NAME:-divvy}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - divvy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-divvy} -d ${DB_NAME:-divvy}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  divvy_pgdata:

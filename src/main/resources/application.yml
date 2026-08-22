@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: backend-divvy
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:divvy}
+    username: ${DB_USER:divvy}
+    password: ${DB_PASSWORD:divvy}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+divvy:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-secret-key-32bytes+}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+logging:
+  level:
+    com.divvy: DEBUG
