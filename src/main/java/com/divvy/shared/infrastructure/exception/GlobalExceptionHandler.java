@@ -2,6 +2,7 @@ package com.divvy.shared.infrastructure.exception;
 
 import com.divvy.shared.domain.exception.DomainException;
 import com.divvy.shared.domain.exception.EntityNotFoundException;
+import com.divvy.shared.domain.exception.InvalidCredentialsException;
 import com.divvy.shared.domain.exception.InvariantViolationException;
 import com.divvy.shared.domain.exception.UnauthorizedOperationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getErrorCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getErrorCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(UnauthorizedOperationException.class)

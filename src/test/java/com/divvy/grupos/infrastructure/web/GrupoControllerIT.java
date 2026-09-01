@@ -1,6 +1,7 @@
 package com.divvy.grupos.infrastructure.web;
 
 import com.divvy.TestcontainersConfiguration;
+import com.divvy.shared.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -25,6 +27,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
+@TestPropertySource(properties = {
+        "divvy.rate-limit.login=1000",
+        "divvy.rate-limit.register=1000",
+        "divvy.rate-limit.forgot-password=1000",
+        "divvy.rate-limit.reset-password=1000"
+})
 class GrupoControllerIT {
 
     @Autowired
@@ -36,13 +44,20 @@ class GrupoControllerIT {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private JwtService jwtService;
+
     private UUID creadorId;
     private UUID invitadoId;
+    private String tokenCreador;
+    private String tokenInvitado;
 
     @BeforeEach
     void setUp() {
         creadorId = crearUsuario();
         invitadoId = crearUsuario();
+        tokenCreador = jwtService.generar(creadorId);
+        tokenInvitado = jwtService.generar(invitadoId);
     }
 
     private UUID crearUsuario() {
@@ -54,11 +69,15 @@ class GrupoControllerIT {
         return id;
     }
 
+    private String bearer(String token) {
+        return "Bearer " + token;
+    }
+
     @Test
     void flujoCompleto_crearListarAgregarRemoverArchivar() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("name", "Roomies"));
         String response = mockMvc.perform(post("/api/groups")
-                        .header("X-User-Id", creadorId)
+                        .header("Authorization", bearer(tokenCreador))
                         .contentType("application/json")
                         .content(body))
                 .andExpect(status().isCreated())
@@ -70,33 +89,34 @@ class GrupoControllerIT {
 
         String grupoId = objectMapper.readTree(response).get("id").asString();
 
-        mockMvc.perform(get("/api/groups").header("X-User-Id", creadorId))
+        mockMvc.perform(get("/api/groups").header("Authorization", bearer(tokenCreador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
 
-        mockMvc.perform(get("/api/groups/" + grupoId))
+        mockMvc.perform(get("/api/groups/" + grupoId).header("Authorization", bearer(tokenCreador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Roomies"));
 
         String agregarBody = objectMapper.writeValueAsString(Map.of("userId", invitadoId.toString()));
         mockMvc.perform(post("/api/groups/" + grupoId + "/members")
+                        .header("Authorization", bearer(tokenCreador))
                         .contentType("application/json")
                         .content(agregarBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.members", hasSize(2)));
 
         mockMvc.perform(delete("/api/groups/" + grupoId + "/members/" + creadorId)
-                        .header("X-User-Id", invitadoId))
+                        .header("Authorization", bearer(tokenInvitado)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("UNAUTHORIZED_OPERATION"));
 
         mockMvc.perform(delete("/api/groups/" + grupoId + "/members/" + invitadoId)
-                        .header("X-User-Id", creadorId))
+                        .header("Authorization", bearer(tokenCreador)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
 
         mockMvc.perform(patch("/api/groups/" + grupoId + "/archive")
-                        .header("X-User-Id", creadorId))
+                        .header("Authorization", bearer(tokenCreador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ARCHIVED"));
     }
@@ -106,7 +126,7 @@ class GrupoControllerIT {
         String body = objectMapper.writeValueAsString(Map.of("name", ""));
 
         mockMvc.perform(post("/api/groups")
-                        .header("X-User-Id", creadorId)
+                        .header("Authorization", bearer(tokenCreador))
                         .contentType("application/json")
                         .content(body))
                 .andExpect(status().isBadRequest())
@@ -115,18 +135,19 @@ class GrupoControllerIT {
     }
 
     @Test
-    void crear_sinHeaderXUserId_devuelve400() throws Exception {
+    void crear_sinToken_devuelve401ConFormatoEstandar() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("name", "Roomies"));
 
         mockMvc.perform(post("/api/groups")
                         .contentType("application/json")
                         .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
     }
 
     @Test
     void obtener_grupoInexistente_devuelve404ConFormatoDeErrorEstandar() throws Exception {
-        mockMvc.perform(get("/api/groups/" + UUID.randomUUID()))
+        mockMvc.perform(get("/api/groups/" + UUID.randomUUID()).header("Authorization", bearer(tokenCreador)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("ENTITY_NOT_FOUND"));
     }
@@ -135,7 +156,7 @@ class GrupoControllerIT {
     void agregarMiembro_usuarioYaEsMiembro_devuelve400() throws Exception {
         String crearBody = objectMapper.writeValueAsString(Map.of("name", "Roomies"));
         String response = mockMvc.perform(post("/api/groups")
-                        .header("X-User-Id", creadorId)
+                        .header("Authorization", bearer(tokenCreador))
                         .contentType("application/json")
                         .content(crearBody))
                 .andReturn().getResponse().getContentAsString();
@@ -143,6 +164,7 @@ class GrupoControllerIT {
 
         String agregarBody = objectMapper.writeValueAsString(Map.of("userId", creadorId.toString()));
         mockMvc.perform(post("/api/groups/" + grupoId + "/members")
+                        .header("Authorization", bearer(tokenCreador))
                         .contentType("application/json")
                         .content(agregarBody))
                 .andExpect(status().isBadRequest())

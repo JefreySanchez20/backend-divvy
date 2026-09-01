@@ -20,13 +20,39 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: ${SERVER_PORT:8080}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
 
 divvy:
   jwt:
     secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-secret-key-32bytes+}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  password-reset:
+    expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:30}
+  rate-limit:
+    window-minutes: ${RATE_LIMIT_WINDOW_MINUTES:15}
+    login: ${RATE_LIMIT_LOGIN:5}
+    register: ${RATE_LIMIT_REGISTER:5}
+    forgot-password: ${RATE_LIMIT_FORGOT_PASSWORD:3}
+    reset-password: ${RATE_LIMIT_RESET_PASSWORD:5}
 
 logging:
   level:
