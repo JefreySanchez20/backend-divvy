@@ -2,6 +2,9 @@ spring:
   application:
     name: backend-divvy
 
+  autoconfigure:
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:divvy}
     username: ${DB_USER:divvy}
