@@ -31,6 +31,7 @@ public class JwtService implements TokenGenerator {
     public String generar(UUID usuarioId) {
         Instant ahora = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(usuarioId.toString())
                 .issuedAt(Date.from(ahora))
                 .expiration(Date.from(ahora.plusMillis(expirationMs)))
@@ -38,12 +39,16 @@ public class JwtService implements TokenGenerator {
                 .compact();
     }
 
-    public UUID validarYObtenerUsuarioId(String token) {
+    public InfoToken validarYExtraerInfo(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return UUID.fromString(claims.getSubject());
+        return new InfoToken(
+                UUID.fromString(claims.getSubject()),
+                claims.getId(),
+                claims.getExpiration().toInstant()
+        );
     }
 }

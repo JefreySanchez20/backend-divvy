@@ -1,6 +1,7 @@
 package com.divvy.autenticacion;
 
 import com.divvy.autenticacion.application.LoginUseCase;
+import com.divvy.autenticacion.application.LogoutUseCase;
 import com.divvy.autenticacion.application.RegistrarUsuarioUseCase;
 import com.divvy.autenticacion.application.RestablecerPasswordUseCase;
 import com.divvy.autenticacion.application.SolicitarRecuperacionPasswordUseCase;
@@ -9,6 +10,7 @@ import com.divvy.autenticacion.domain.PasswordHasher;
 import com.divvy.autenticacion.domain.TokenGenerator;
 import com.divvy.autenticacion.domain.TokenRecuperacionRepository;
 import com.divvy.autenticacion.domain.UsuarioRepository;
+import com.divvy.shared.domain.TokenBlacklist;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,5 +48,10 @@ public class AutenticacionConfig {
             PasswordHasher passwordHasher
     ) {
         return new RestablecerPasswordUseCase(tokenRecuperacionRepository, usuarioRepository, passwordHasher);
+    }
+
+    @Bean
+    public LogoutUseCase logoutUseCase(TokenBlacklist tokenBlacklist) {
+        return new LogoutUseCase(tokenBlacklist);
     }
 }

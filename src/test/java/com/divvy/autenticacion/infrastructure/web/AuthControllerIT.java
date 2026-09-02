@@ -127,4 +127,34 @@ class AuthControllerIT {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
     }
+
+    @Test
+    void logout_invalidaElTokenActual() throws Exception {
+        String email = emailUnico();
+        String registerBody = objectMapper.writeValueAsString(Map.of("email", email, "password", "clave1234", "name", "Ana"));
+        mockMvc.perform(post("/api/auth/register").contentType("application/json").content(registerBody))
+                .andExpect(status().isCreated());
+
+        String loginBody = objectMapper.writeValueAsString(Map.of("email", email, "password", "clave1234"));
+        String response = mockMvc.perform(post("/api/auth/login").contentType("application/json").content(loginBody))
+                .andReturn().getResponse().getContentAsString();
+        String token = objectMapper.readTree(response).get("token").asString();
+
+        mockMvc.perform(get("/api/groups").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/groups").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
+    }
+
+    @Test
+    void logout_sinToken_devuelve401() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
+    }
 }

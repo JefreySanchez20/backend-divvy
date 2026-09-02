@@ -1,6 +1,7 @@
 package com.divvy.autenticacion.infrastructure.web;
 
 import com.divvy.autenticacion.application.LoginUseCase;
+import com.divvy.autenticacion.application.LogoutUseCase;
 import com.divvy.autenticacion.application.RegistrarUsuarioUseCase;
 import com.divvy.autenticacion.application.RestablecerPasswordUseCase;
 import com.divvy.autenticacion.application.SolicitarRecuperacionPasswordUseCase;
@@ -11,12 +12,14 @@ import com.divvy.autenticacion.infrastructure.web.dto.LoginResponse;
 import com.divvy.autenticacion.infrastructure.web.dto.RegisterRequest;
 import com.divvy.autenticacion.infrastructure.web.dto.RegisterResponse;
 import com.divvy.autenticacion.infrastructure.web.dto.ResetPasswordRequest;
+import com.divvy.shared.infrastructure.security.TokenCredentials;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,17 +32,20 @@ public class AuthController {
 
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
     private final LoginUseCase loginUseCase;
+    private final LogoutUseCase logoutUseCase;
     private final SolicitarRecuperacionPasswordUseCase solicitarRecuperacionPasswordUseCase;
     private final RestablecerPasswordUseCase restablecerPasswordUseCase;
 
     public AuthController(
             RegistrarUsuarioUseCase registrarUsuarioUseCase,
             LoginUseCase loginUseCase,
+            LogoutUseCase logoutUseCase,
             SolicitarRecuperacionPasswordUseCase solicitarRecuperacionPasswordUseCase,
             RestablecerPasswordUseCase restablecerPasswordUseCase
     ) {
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.loginUseCase = loginUseCase;
+        this.logoutUseCase = logoutUseCase;
         this.solicitarRecuperacionPasswordUseCase = solicitarRecuperacionPasswordUseCase;
         this.restablecerPasswordUseCase = restablecerPasswordUseCase;
     }
@@ -59,6 +65,14 @@ public class AuthController {
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         String token = loginUseCase.ejecutar(request.email(), request.password());
         return new LoginResponse(token);
+    }
+
+    @Operation(summary = "Logout", description = "Invalida el token actual antes de que expire naturalmente.")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(Authentication authentication) {
+        TokenCredentials credenciales = (TokenCredentials) authentication.getCredentials();
+        logoutUseCase.ejecutar(credenciales.jti(), credenciales.expiracion());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(

@@ -1,5 +1,6 @@
 package com.divvy.shared.infrastructure.security;
 
+import com.divvy.shared.domain.TokenBlacklist;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,15 +13,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenBlacklist tokenBlacklist;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, TokenBlacklist tokenBlacklist) {
         this.jwtService = jwtService;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
@@ -31,9 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                UUID usuarioId = jwtService.validarYObtenerUsuarioId(token);
-                var authentication = new UsernamePasswordAuthenticationToken(usuarioId, null, List.of());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                InfoToken info = jwtService.validarYExtraerInfo(token);
+                if (!tokenBlacklist.estaRevocado(info.jti())) {
+                    var credenciales = new TokenCredentials(info.jti(), info.expiracion());
+                    var authentication = new UsernamePasswordAuthenticationToken(info.usuarioId(), credenciales, List.of());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (JwtException | IllegalArgumentException e) {
                 SecurityContextHolder.clearContext();
             }
