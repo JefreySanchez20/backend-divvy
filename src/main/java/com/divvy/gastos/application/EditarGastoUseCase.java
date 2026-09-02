@@ -4,7 +4,7 @@ import com.divvy.gastos.domain.DivisionGasto;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.GastoRepository;
 import com.divvy.gastos.domain.TipoDivision;
-import com.divvy.gastos.domain.VerificadorMiembroGrupo;
+import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.Dinero;
 import com.divvy.shared.domain.exception.EntityNotFoundException;
 import com.divvy.shared.domain.exception.InvariantViolationException;

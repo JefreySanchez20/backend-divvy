@@ -1,6 +1,6 @@
-package com.divvy.gastos.infrastructure.persistence;
+package com.divvy.shared.infrastructure.persistence;
 
-import com.divvy.gastos.domain.VerificadorMiembroGrupo;
+import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 

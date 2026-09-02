@@ -1,4 +1,4 @@
-package com.divvy.gastos.domain;
+package com.divvy.shared.domain;
 
 import java.util.UUID;
 

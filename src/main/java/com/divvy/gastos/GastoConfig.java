@@ -6,7 +6,7 @@ import com.divvy.gastos.application.ListarGastosPorGrupoUseCase;
 import com.divvy.gastos.application.ObtenerGastoUseCase;
 import com.divvy.gastos.application.RegistrarGastoUseCase;
 import com.divvy.gastos.domain.GastoRepository;
-import com.divvy.gastos.domain.VerificadorMiembroGrupo;
+import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.DomainEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

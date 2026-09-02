@@ -4,12 +4,13 @@ import com.divvy.gastos.domain.DivisionGasto;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.GastoRepository;
 import com.divvy.gastos.domain.TipoDivision;
-import com.divvy.gastos.domain.VerificadorMiembroGrupo;
+import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.Dinero;
 import com.divvy.shared.domain.DomainEventPublisher;
 import com.divvy.shared.domain.events.GastoRegistradoEvent;
 import com.divvy.shared.domain.exception.InvariantViolationException;
 import com.divvy.shared.domain.exception.UnauthorizedOperationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +33,7 @@ public class RegistrarGastoUseCase {
         this.eventPublisher = eventPublisher;
     }
 
+    @Transactional
     public Gasto ejecutar(
             UUID actorId, UUID grupoId, String descripcion, BigDecimal monto, String moneda,
             UUID pagadoPor, Instant fecha, String categoria, TipoDivision tipoDivision, Map<UUID, BigDecimal> detalleDivision
@@ -50,7 +52,7 @@ public class RegistrarGastoUseCase {
         Gasto guardado = gastoRepository.guardar(gasto);
 
         eventPublisher.publicar(new GastoRegistradoEvent(
-                grupoId, guardado.id(), dinero.monto(), dinero.moneda(), division.detalle()));
+                grupoId, guardado.id(), pagadoPor, dinero.monto(), dinero.moneda(), division.detalle()));
 
         return guardado;
     }

@@ -5,6 +5,7 @@ import com.divvy.gastos.domain.DivisionGasto;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.TipoDivision;
 import com.divvy.shared.domain.Dinero;
+import com.divvy.shared.infrastructure.persistence.VerificadorMiembroGrupoImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

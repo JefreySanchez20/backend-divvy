@@ -3,7 +3,7 @@ package com.divvy.gastos.application;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.GastoRepository;
 import com.divvy.gastos.domain.TipoDivision;
-import com.divvy.gastos.domain.VerificadorMiembroGrupo;
+import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.DomainEvent;
 import com.divvy.shared.domain.DomainEventPublisher;
 import com.divvy.shared.domain.events.GastoRegistradoEvent;
@@ -60,6 +60,7 @@ class RegistrarGastoUseCaseTest {
         assertThat(captor.getValue()).isInstanceOf(GastoRegistradoEvent.class);
         GastoRegistradoEvent evento = (GastoRegistradoEvent) captor.getValue();
         assertThat(evento.grupoId()).isEqualTo(grupoId);
+        assertThat(evento.pagadoPor()).isEqualTo(pagadoPor);
         assertThat(evento.monto()).isEqualByComparingTo("50.00");
     }
 
