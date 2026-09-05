@@ -10,6 +10,8 @@ Crear grupos, registrar gastos, dividirlos entre miembros y liquidar deudas con 
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![CI](https://github.com/JefreySanchez20/backend-divvy/actions/workflows/ci.yml/badge.svg)](https://github.com/JefreySanchez20/backend-divvy/actions/workflows/ci.yml)
 
+**API en vivo:** [backend-divvy.onrender.com](https://backend-divvy.onrender.com) · **Swagger:** [backend-divvy.onrender.com/swagger-ui.html](https://backend-divvy.onrender.com/swagger-ui.html)
+
 </div>
 
 ---
@@ -92,7 +94,7 @@ Variables de entorno documentadas en [`.env.example`](.env.example).
 
 ## API
 
-Documentación interactiva (Swagger UI): **`http://localhost:8080/swagger-ui.html`**
+Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagger-ui.html`**, en producción **[backend-divvy.onrender.com/swagger-ui.html](https://backend-divvy.onrender.com/swagger-ui.html)**.
 
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
@@ -142,11 +144,18 @@ docker run -p 8080:8080 \
 
 ## Despliegue
 
-Pensado para desplegarse en **Render** (aplicación) + **Neon** (Postgres gestionado, con SSL). La app ya soporta esto out-of-the-box:
+Desplegado en **Render** (aplicación, build vía Docker) + **Neon** (Postgres gestionado, con SSL):
+
+- **API:** https://backend-divvy.onrender.com
+- **Swagger:** https://backend-divvy.onrender.com/swagger-ui.html
+
+La app soporta esto out-of-the-box:
 
 - `server.port` respeta la variable `PORT` que inyecta Render.
 - `DB_SSLMODE=require` habilita la conexión SSL que exige Neon.
 - `/actuator/health` sirve como health check para Render.
+
+> El plan de Render usado es el free tier: el servicio se "duerme" tras un rato sin tráfico, por lo que el primer request luego de inactividad puede tardar hasta 1-2 minutos (cold start).
 
 ## CI
 
