@@ -103,6 +103,7 @@ Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagg
 | `POST` | `/api/auth/logout` | Invalida el token actual | ✅ |
 | `POST` | `/api/auth/forgot-password` | Solicita email de recuperación | — |
 | `POST` | `/api/auth/reset-password` | Restablece contraseña con token | — |
+| `GET` | `/api/users?email=` | Buscar usuario por email (para agregarlo a un grupo) | ✅ |
 | `POST` | `/api/groups` | Crear grupo | ✅ |
 | `GET` | `/api/groups` | Listar grupos del usuario | ✅ |
 | `GET` | `/api/groups/{id}` | Detalle de un grupo | ✅ |
@@ -129,7 +130,7 @@ Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagg
 
 Los tests de integración levantan un contenedor Postgres real vía Testcontainers (requiere Docker corriendo).
 
-> **171 tests · 0 fallos** (último run local)
+> **176 tests · 0 fallos** (último run local)
 
 ## Docker
 
