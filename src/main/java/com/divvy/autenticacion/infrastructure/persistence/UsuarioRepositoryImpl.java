@@ -4,6 +4,7 @@ import com.divvy.autenticacion.domain.Usuario;
 import com.divvy.autenticacion.domain.UsuarioRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +38,13 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Override
     public Optional<Usuario> buscarPorId(UUID id) {
         return jpaRepository.findById(id).map(UsuarioRepositoryImpl::toDomain);
+    }
+
+    @Override
+    public List<Usuario> buscarPorIds(List<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream()
+                .map(UsuarioRepositoryImpl::toDomain)
+                .toList();
     }
 
     private static Usuario toDomain(UsuarioJpaEntity entity) {

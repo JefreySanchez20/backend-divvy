@@ -104,6 +104,7 @@ Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagg
 | `POST` | `/api/auth/forgot-password` | Solicita email de recuperación | — |
 | `POST` | `/api/auth/reset-password` | Restablece contraseña con token | — |
 | `GET` | `/api/users?email=` | Buscar usuario por email (para agregarlo a un grupo) | ✅ |
+| `GET` | `/api/users?ids=` | Buscar usuarios por id, en batch (para resolver nombres de miembros de un grupo) | ✅ |
 | `POST` | `/api/groups` | Crear grupo | ✅ |
 | `GET` | `/api/groups` | Listar grupos del usuario | ✅ |
 | `GET` | `/api/groups/{id}` | Detalle de un grupo | ✅ |

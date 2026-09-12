@@ -1,6 +1,7 @@
 package com.divvy.autenticacion;
 
 import com.divvy.autenticacion.application.BuscarUsuarioPorEmailUseCase;
+import com.divvy.autenticacion.application.BuscarUsuariosPorIdsUseCase;
 import com.divvy.autenticacion.application.LoginUseCase;
 import com.divvy.autenticacion.application.LogoutUseCase;
 import com.divvy.autenticacion.application.RegistrarUsuarioUseCase;
@@ -59,5 +60,10 @@ public class AutenticacionConfig {
     @Bean
     public BuscarUsuarioPorEmailUseCase buscarUsuarioPorEmailUseCase(UsuarioRepository usuarioRepository) {
         return new BuscarUsuarioPorEmailUseCase(usuarioRepository);
+    }
+
+    @Bean
+    public BuscarUsuariosPorIdsUseCase buscarUsuariosPorIdsUseCase(UsuarioRepository usuarioRepository) {
+        return new BuscarUsuariosPorIdsUseCase(usuarioRepository);
     }
 }

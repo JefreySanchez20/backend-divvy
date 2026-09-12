@@ -78,4 +78,33 @@ class UsuarioControllerIT {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
     }
+
+    @Test
+    void buscarPorIds_idsExistenYNoExisten_devuelveSoloLosEncontrados() throws Exception {
+        String emailAna = emailUnico();
+        String registerBodyAna = objectMapper.writeValueAsString(Map.of("email", emailAna, "password", "clave1234", "name", "Ana"));
+        mockMvc.perform(post("/api/auth/register").contentType("application/json").content(registerBodyAna))
+                .andExpect(status().isCreated());
+        String tokenAna = loginYObtenerToken(emailAna, "clave1234");
+        String idAna = objectMapper.readTree(
+                        mockMvc.perform(get("/api/users").param("email", emailAna).header("Authorization", "Bearer " + tokenAna))
+                                .andReturn().getResponse().getContentAsString())
+                .get("id").asString();
+
+        String idInexistente = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/api/users").param("ids", idAna + "," + idInexistente).header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(idAna))
+                .andExpect(jsonPath("$[0].email").value(emailAna))
+                .andExpect(jsonPath("$[0].name").value("Ana"));
+    }
+
+    @Test
+    void buscarPorIds_sinToken_devuelve401() throws Exception {
+        mockMvc.perform(get("/api/users").param("ids", UUID.randomUUID().toString()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
+    }
 }
