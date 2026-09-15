@@ -1,6 +1,7 @@
 package com.divvy.autenticacion.infrastructure.web;
 
 import com.divvy.TestcontainersConfiguration;
+import com.divvy.autenticacion.application.BuscarUsuariosPorIdsUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,8 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,7 +96,7 @@ class UsuarioControllerIT {
 
         String idInexistente = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/api/users").param("ids", idAna + "," + idInexistente).header("Authorization", "Bearer " + tokenAna))
+        mockMvc.perform(get("/api/users/batch").param("ids", idAna + "," + idInexistente).header("Authorization", "Bearer " + tokenAna))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(idAna))
@@ -103,8 +106,25 @@ class UsuarioControllerIT {
 
     @Test
     void buscarPorIds_sinToken_devuelve401() throws Exception {
-        mockMvc.perform(get("/api/users").param("ids", UUID.randomUUID().toString()))
+        mockMvc.perform(get("/api/users/batch").param("ids", UUID.randomUUID().toString()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
+    }
+
+    @Test
+    void buscarPorIds_masDeCienIds_devuelve400() throws Exception {
+        String email = emailUnico();
+        String registerBody = objectMapper.writeValueAsString(Map.of("email", email, "password", "clave1234", "name", "Ana"));
+        mockMvc.perform(post("/api/auth/register").contentType("application/json").content(registerBody))
+                .andExpect(status().isCreated());
+        String token = loginYObtenerToken(email, "clave1234");
+
+        String demasiadosIds = IntStream.range(0, BuscarUsuariosPorIdsUseCase.MAX_IDS_POR_CONSULTA + 1)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .collect(Collectors.joining(","));
+
+        mockMvc.perform(get("/api/users/batch").param("ids", demasiadosIds).header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
     }
 }
