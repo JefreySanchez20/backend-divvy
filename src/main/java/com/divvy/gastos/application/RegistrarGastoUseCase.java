@@ -4,6 +4,7 @@ import com.divvy.gastos.domain.DivisionGasto;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.GastoRepository;
 import com.divvy.gastos.domain.TipoDivision;
+import com.divvy.shared.domain.ConsultorMonedaGrupo;
 import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.Dinero;
 import com.divvy.shared.domain.DomainEventPublisher;
@@ -21,15 +22,18 @@ public class RegistrarGastoUseCase {
 
     private final GastoRepository gastoRepository;
     private final VerificadorMiembroGrupo verificadorMiembroGrupo;
+    private final ConsultorMonedaGrupo consultorMonedaGrupo;
     private final DomainEventPublisher eventPublisher;
 
     public RegistrarGastoUseCase(
             GastoRepository gastoRepository,
             VerificadorMiembroGrupo verificadorMiembroGrupo,
+            ConsultorMonedaGrupo consultorMonedaGrupo,
             DomainEventPublisher eventPublisher
     ) {
         this.gastoRepository = gastoRepository;
         this.verificadorMiembroGrupo = verificadorMiembroGrupo;
+        this.consultorMonedaGrupo = consultorMonedaGrupo;
         this.eventPublisher = eventPublisher;
     }
 
@@ -44,6 +48,7 @@ public class RegistrarGastoUseCase {
         if (!verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)) {
             throw new InvariantViolationException("El usuario que pagó debe ser miembro activo del grupo");
         }
+        MonedaDelGrupo.exigir(consultorMonedaGrupo, grupoId, moneda);
 
         Dinero dinero = Dinero.de(monto, moneda);
         DivisionGasto division = DivisionGasto.crear(tipoDivision, dinero, detalleDivision);

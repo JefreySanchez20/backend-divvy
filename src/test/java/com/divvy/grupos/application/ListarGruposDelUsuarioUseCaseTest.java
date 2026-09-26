@@ -22,8 +22,8 @@ class ListarGruposDelUsuarioUseCaseTest {
     @Test
     void ejecutar_delegaEnElRepositorio() {
         UUID usuarioId = UUID.randomUUID();
-        Grupo grupo1 = Grupo.crear(UUID.randomUUID(), "Roomies", usuarioId);
-        Grupo grupo2 = Grupo.crear(UUID.randomUUID(), "Viaje a Cusco", usuarioId);
+        Grupo grupo1 = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", usuarioId);
+        Grupo grupo2 = Grupo.crear(UUID.randomUUID(), "Viaje a Cusco", "PEN", usuarioId);
         when(grupoRepository.buscarPorUsuario(usuarioId)).thenReturn(List.of(grupo1, grupo2));
 
         ListarGruposDelUsuarioUseCase useCase = new ListarGruposDelUsuarioUseCase(grupoRepository);

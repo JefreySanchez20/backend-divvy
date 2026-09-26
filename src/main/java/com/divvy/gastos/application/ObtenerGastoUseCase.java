@@ -23,7 +23,7 @@ public class ObtenerGastoUseCase {
                 .filter(g -> g.grupoId().equals(grupoId))
                 .orElseThrow(() -> new EntityNotFoundException("Gasto no encontrado: " + gastoId));
 
-        if (!verificadorMiembroGrupo.esMiembroActivo(gasto.grupoId(), actorId)) {
+        if (!verificadorMiembroGrupo.esMiembro(gasto.grupoId(), actorId)) {
             throw new UnauthorizedOperationException("Debes ser miembro del grupo para ver este gasto");
         }
 

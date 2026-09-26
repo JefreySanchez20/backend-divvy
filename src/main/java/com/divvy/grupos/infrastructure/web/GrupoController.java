@@ -63,7 +63,7 @@ public class GrupoController {
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody CrearGrupoRequest request
     ) {
-        Grupo grupo = crearGrupoUseCase.ejecutar(request.name(), userId);
+        Grupo grupo = crearGrupoUseCase.ejecutar(request.name(), request.currencyOrDefault(), userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(GrupoDtoMapper.toResponse(grupo));
     }
 
@@ -75,19 +75,20 @@ public class GrupoController {
                 .toList();
     }
 
-    @Operation(summary = "Obtener grupo", description = "Devuelve el detalle de un grupo por su id.")
+    @Operation(summary = "Obtener grupo", description = "Devuelve el detalle de un grupo por su id. Solo lo pueden ver sus miembros.")
     @GetMapping("/{id}")
-    public GrupoResponse obtener(@PathVariable UUID id) {
-        return GrupoDtoMapper.toResponse(obtenerGrupoUseCase.ejecutar(id));
+    public GrupoResponse obtener(@AuthenticationPrincipal UUID actorId, @PathVariable UUID id) {
+        return GrupoDtoMapper.toResponse(obtenerGrupoUseCase.ejecutar(id, actorId));
     }
 
-    @Operation(summary = "Agregar miembro", description = "Agrega un usuario al grupo con rol MEMBER.")
+    @Operation(summary = "Agregar miembro", description = "Agrega un usuario al grupo con rol MEMBER. Solo un ADMIN del grupo puede hacerlo.")
     @PostMapping("/{id}/members")
     public ResponseEntity<GrupoResponse> agregarMiembro(
             @PathVariable UUID id,
-            @Valid @RequestBody AgregarMiembroRequest request
+            @Valid @RequestBody AgregarMiembroRequest request,
+            @AuthenticationPrincipal UUID actorId
     ) {
-        Grupo grupo = agregarMiembroUseCase.ejecutar(id, request.userId());
+        Grupo grupo = agregarMiembroUseCase.ejecutar(id, actorId, request.userId());
         return ResponseEntity.ok(GrupoDtoMapper.toResponse(grupo));
     }
 

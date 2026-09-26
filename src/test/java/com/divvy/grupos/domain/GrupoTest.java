@@ -18,7 +18,7 @@ class GrupoTest {
     void crear_conNombreValido_generaGrupoConCreadorComoUnicoAdmin() {
         UUID creadorId = UUID.randomUUID();
 
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
 
         assertThat(grupo.nombre()).isEqualTo("Roomies");
         assertThat(grupo.estado()).isEqualTo(EstadoGrupo.ACTIVO);
@@ -29,19 +29,19 @@ class GrupoTest {
 
     @Test
     void crear_conNombreVacio_lanzaInvariantViolation() {
-        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "  ", UUID.randomUUID()))
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "  ", "PEN", UUID.randomUUID()))
                 .isInstanceOf(InvariantViolationException.class);
     }
 
     @Test
     void crear_conNombreNulo_lanzaInvariantViolation() {
-        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), null, UUID.randomUUID()))
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), null, "PEN", UUID.randomUUID()))
                 .isInstanceOf(InvariantViolationException.class);
     }
 
     @Test
     void agregarMiembro_usuarioNuevo_seAgregaComoMiembroConRolMiembro() {
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Viaje a Cusco", UUID.randomUUID());
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Viaje a Cusco", "PEN", UUID.randomUUID());
         UUID nuevoUsuario = UUID.randomUUID();
 
         grupo.agregarMiembro(nuevoUsuario);
@@ -54,7 +54,7 @@ class GrupoTest {
     @Test
     void agregarMiembro_usuarioYaEsMiembro_lanzaInvariantViolation() {
         UUID creadorId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
 
         assertThatThrownBy(() -> grupo.agregarMiembro(creadorId))
                 .isInstanceOf(InvariantViolationException.class);
@@ -63,7 +63,7 @@ class GrupoTest {
     @Test
     void agregarMiembro_grupoArchivado_lanzaInvariantViolation() {
         UUID creadorId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(UUID.randomUUID());
         grupo.archivar(creadorId);
 
@@ -76,7 +76,7 @@ class GrupoTest {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
         UUID miembro3 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
         grupo.agregarMiembro(miembro3);
 
@@ -87,7 +87,7 @@ class GrupoTest {
     @Test
     void removerMiembro_usuarioNoEsMiembroDelGrupo_lanzaEntityNotFound() {
         UUID creadorId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(UUID.randomUUID());
 
         assertThatThrownBy(() -> grupo.removerMiembro(creadorId, UUID.randomUUID()))
@@ -98,7 +98,7 @@ class GrupoTest {
     void removerMiembro_dejariaMenosDe2Miembros_lanzaInvariantViolation() {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
 
         assertThatThrownBy(() -> grupo.removerMiembro(creadorId, miembro2))
@@ -110,7 +110,7 @@ class GrupoTest {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
         UUID miembro3 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
         grupo.agregarMiembro(miembro3);
 
@@ -124,7 +124,7 @@ class GrupoTest {
     void archivar_actorNoEsAdmin_lanzaUnauthorized() {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
 
         assertThatThrownBy(() -> grupo.archivar(miembro2))
@@ -134,7 +134,7 @@ class GrupoTest {
     @Test
     void archivar_porAdmin_cambiaEstadoAArchivado() {
         UUID creadorId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(UUID.randomUUID());
 
         grupo.archivar(creadorId);
@@ -144,7 +144,7 @@ class GrupoTest {
 
     @Test
     void miembros_devuelveListaInmutable() {
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", UUID.randomUUID());
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", UUID.randomUUID());
 
         assertThatThrownBy(() -> grupo.miembros().add(new Miembro(UUID.randomUUID(), Rol.MIEMBRO, Instant.now())))
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -161,10 +161,34 @@ class GrupoTest {
                 new Miembro(usuario2, Rol.MIEMBRO, fechaCreacion)
         );
 
-        Grupo grupo = Grupo.reconstruir(id, "Roomies", fechaCreacion, EstadoGrupo.ARCHIVADO, miembros);
+        Grupo grupo = Grupo.reconstruir(id, "Roomies", "PEN", fechaCreacion, EstadoGrupo.ARCHIVADO, miembros);
 
         assertThat(grupo.id()).isEqualTo(id);
         assertThat(grupo.estado()).isEqualTo(EstadoGrupo.ARCHIVADO);
         assertThat(grupo.miembros()).hasSize(2);
+    }
+
+    @Test
+    void crear_guardaLaMonedaDelGrupo() {
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Viaje", "USD", UUID.randomUUID());
+
+        assertThat(grupo.moneda()).isEqualTo("USD");
+    }
+
+    @Test
+    void crear_monedaInvalida_lanzaInvariantViolation() {
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "Viaje", "XXXX", UUID.randomUUID()))
+                .isInstanceOf(InvariantViolationException.class)
+                .hasMessageContaining("ISO 4217");
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "Viaje", "pen", UUID.randomUUID()))
+                .isInstanceOf(InvariantViolationException.class);
+    }
+
+    @Test
+    void crear_monedaVaciaONula_lanzaInvariantViolation() {
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "Viaje", " ", UUID.randomUUID()))
+                .isInstanceOf(InvariantViolationException.class);
+        assertThatThrownBy(() -> Grupo.crear(UUID.randomUUID(), "Viaje", null, UUID.randomUUID()))
+                .isInstanceOf(InvariantViolationException.class);
     }
 }

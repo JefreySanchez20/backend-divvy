@@ -31,7 +31,7 @@ class ObtenerHistorialLiquidacionesUseCaseTest {
         UUID actorId = UUID.randomUUID();
         Liquidacion liquidacion = Liquidacion.calcular(UUID.randomUUID(), grupoId, List.of());
 
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(true);
         when(liquidacionRepository.buscarPorGrupo(grupoId)).thenReturn(List.of(liquidacion));
 
         ObtenerHistorialLiquidacionesUseCase useCase = new ObtenerHistorialLiquidacionesUseCase(
@@ -44,7 +44,7 @@ class ObtenerHistorialLiquidacionesUseCaseTest {
     void ejecutar_actorNoEsMiembro_lanzaUnauthorized() {
         UUID grupoId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(false);
 
         ObtenerHistorialLiquidacionesUseCase useCase = new ObtenerHistorialLiquidacionesUseCase(
                 liquidacionRepository, verificadorMiembroGrupo);

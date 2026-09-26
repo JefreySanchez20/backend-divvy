@@ -27,7 +27,7 @@ class ArchivarGrupoUseCaseTest {
     void ejecutar_actorEsAdmin_archivaYGuarda() {
         UUID grupoId = UUID.randomUUID();
         UUID creadorId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(grupoId, "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(UUID.randomUUID());
 
         when(grupoRepository.buscarPorId(grupoId)).thenReturn(Optional.of(grupo));
@@ -44,7 +44,7 @@ class ArchivarGrupoUseCaseTest {
         UUID grupoId = UUID.randomUUID();
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(grupoId, "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
 
         when(grupoRepository.buscarPorId(grupoId)).thenReturn(Optional.of(grupo));

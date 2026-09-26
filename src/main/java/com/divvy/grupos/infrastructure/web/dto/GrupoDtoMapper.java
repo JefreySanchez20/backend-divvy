@@ -14,6 +14,7 @@ public final class GrupoDtoMapper {
         return new GrupoResponse(
                 grupo.id(),
                 grupo.nombre(),
+                grupo.moneda(),
                 grupo.fechaCreacion(),
                 mapEstado(grupo.estado()),
                 grupo.miembros().stream().map(GrupoDtoMapper::toResponse).toList()

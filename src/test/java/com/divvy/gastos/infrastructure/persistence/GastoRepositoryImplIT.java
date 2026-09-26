@@ -136,4 +136,20 @@ class GastoRepositoryImplIT {
 
         assertThat(verificador.esMiembroActivo(grupoId, usuario1)).isFalse();
     }
+
+    @Test
+    void verificadorMiembroGrupo_esMiembro_grupoArchivado_sigueSiendoTrueParaSusMiembros() {
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+        VerificadorMiembroGrupoImpl verificador = new VerificadorMiembroGrupoImpl(jdbcTemplate);
+
+        assertThat(verificador.esMiembro(grupoId, usuario1)).isTrue();
+    }
+
+    @Test
+    void verificadorMiembroGrupo_esMiembro_usuarioAjeno_devuelveFalse() {
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+        VerificadorMiembroGrupoImpl verificador = new VerificadorMiembroGrupoImpl(jdbcTemplate);
+
+        assertThat(verificador.esMiembro(grupoId, UUID.randomUUID())).isFalse();
+    }
 }

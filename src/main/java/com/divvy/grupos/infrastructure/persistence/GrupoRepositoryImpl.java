@@ -46,6 +46,7 @@ public class GrupoRepositoryImpl implements GrupoRepository {
         return new GrupoJpaEntity(
                 grupo.id(),
                 grupo.nombre(),
+                grupo.moneda(),
                 grupo.fechaCreacion(),
                 grupo.estado(),
                 miembros
@@ -60,6 +61,7 @@ public class GrupoRepositoryImpl implements GrupoRepository {
         return Grupo.reconstruir(
                 entity.getId(),
                 entity.getNombre(),
+                entity.getMoneda(),
                 entity.getFechaCreacion(),
                 entity.getEstado(),
                 miembros

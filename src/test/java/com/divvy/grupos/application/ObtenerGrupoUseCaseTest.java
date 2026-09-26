@@ -14,6 +14,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import com.divvy.shared.domain.exception.UnauthorizedOperationException;
 
 @ExtendWith(MockitoExtension.class)
 class ObtenerGrupoUseCaseTest {
@@ -24,12 +25,13 @@ class ObtenerGrupoUseCaseTest {
     @Test
     void ejecutar_grupoExiste_loRetorna() {
         UUID grupoId = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(grupoId, "Roomies", UUID.randomUUID());
+        UUID miembroId = UUID.randomUUID();
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", miembroId);
         when(grupoRepository.buscarPorId(grupoId)).thenReturn(Optional.of(grupo));
 
         ObtenerGrupoUseCase useCase = new ObtenerGrupoUseCase(grupoRepository);
 
-        assertThat(useCase.ejecutar(grupoId)).isSameAs(grupo);
+        assertThat(useCase.ejecutar(grupoId, miembroId)).isSameAs(grupo);
     }
 
     @Test
@@ -39,7 +41,32 @@ class ObtenerGrupoUseCaseTest {
 
         ObtenerGrupoUseCase useCase = new ObtenerGrupoUseCase(grupoRepository);
 
-        assertThatThrownBy(() -> useCase.ejecutar(grupoId))
+        assertThatThrownBy(() -> useCase.ejecutar(grupoId, UUID.randomUUID()))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void ejecutar_actorNoEsMiembro_lanzaUnauthorized() {
+        UUID grupoId = UUID.randomUUID();
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", UUID.randomUUID());
+        when(grupoRepository.buscarPorId(grupoId)).thenReturn(Optional.of(grupo));
+
+        ObtenerGrupoUseCase useCase = new ObtenerGrupoUseCase(grupoRepository);
+
+        assertThatThrownBy(() -> useCase.ejecutar(grupoId, UUID.randomUUID()))
+                .isInstanceOf(UnauthorizedOperationException.class);
+    }
+
+    @Test
+    void ejecutar_grupoArchivado_sigueVisibleParaSusMiembros() {
+        UUID grupoId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", adminId);
+        grupo.archivar(adminId);
+        when(grupoRepository.buscarPorId(grupoId)).thenReturn(Optional.of(grupo));
+
+        ObtenerGrupoUseCase useCase = new ObtenerGrupoUseCase(grupoRepository);
+
+        assertThat(useCase.ejecutar(grupoId, adminId)).isSameAs(grupo);
     }
 }

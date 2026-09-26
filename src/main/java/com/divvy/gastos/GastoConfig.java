@@ -6,6 +6,7 @@ import com.divvy.gastos.application.ListarGastosPorGrupoUseCase;
 import com.divvy.gastos.application.ObtenerGastoUseCase;
 import com.divvy.gastos.application.RegistrarGastoUseCase;
 import com.divvy.gastos.domain.GastoRepository;
+import com.divvy.shared.domain.ConsultorMonedaGrupo;
 import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.DomainEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -16,9 +17,10 @@ public class GastoConfig {
 
     @Bean
     public RegistrarGastoUseCase registrarGastoUseCase(
-            GastoRepository gastoRepository, VerificadorMiembroGrupo verificadorMiembroGrupo, DomainEventPublisher eventPublisher
+            GastoRepository gastoRepository, VerificadorMiembroGrupo verificadorMiembroGrupo,
+            ConsultorMonedaGrupo consultorMonedaGrupo, DomainEventPublisher eventPublisher
     ) {
-        return new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, eventPublisher);
+        return new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo, eventPublisher);
     }
 
     @Bean
@@ -37,9 +39,10 @@ public class GastoConfig {
 
     @Bean
     public EditarGastoUseCase editarGastoUseCase(
-            GastoRepository gastoRepository, VerificadorMiembroGrupo verificadorMiembroGrupo
+            GastoRepository gastoRepository, VerificadorMiembroGrupo verificadorMiembroGrupo,
+            ConsultorMonedaGrupo consultorMonedaGrupo
     ) {
-        return new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo);
+        return new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
     }
 
     @Bean

@@ -7,6 +7,7 @@ import com.divvy.shared.domain.exception.UnauthorizedOperationException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,40 +18,56 @@ public final class Grupo {
 
     private final UUID id;
     private final String nombre;
+    private final String moneda;
     private final Instant fechaCreacion;
     private EstadoGrupo estado;
     private final List<Miembro> miembros;
 
-    private Grupo(UUID id, String nombre, Instant fechaCreacion, EstadoGrupo estado, List<Miembro> miembros) {
+    private Grupo(UUID id, String nombre, String moneda, Instant fechaCreacion, EstadoGrupo estado, List<Miembro> miembros) {
         this.id = id;
         this.nombre = nombre;
+        this.moneda = moneda;
         this.fechaCreacion = fechaCreacion;
         this.estado = estado;
         this.miembros = new ArrayList<>(miembros);
     }
 
-    public static Grupo crear(UUID id, String nombre, UUID creadorId) {
+    public static Grupo crear(UUID id, String nombre, String moneda, UUID creadorId) {
         Objects.requireNonNull(id, "El id del grupo no puede ser nulo");
         Objects.requireNonNull(creadorId, "El creadorId no puede ser nulo");
         validarNombre(nombre);
+        validarMoneda(moneda);
 
         Instant ahora = Instant.now();
         Miembro creador = new Miembro(creadorId, Rol.ADMIN, ahora);
-        return new Grupo(id, nombre, ahora, EstadoGrupo.ACTIVO, List.of(creador));
+        return new Grupo(id, nombre, moneda, ahora, EstadoGrupo.ACTIVO, List.of(creador));
     }
 
-    public static Grupo reconstruir(UUID id, String nombre, Instant fechaCreacion, EstadoGrupo estado, List<Miembro> miembros) {
+    public static Grupo reconstruir(UUID id, String nombre, String moneda, Instant fechaCreacion, EstadoGrupo estado, List<Miembro> miembros) {
         Objects.requireNonNull(id);
         Objects.requireNonNull(nombre);
+        Objects.requireNonNull(moneda);
         Objects.requireNonNull(fechaCreacion);
         Objects.requireNonNull(estado);
         Objects.requireNonNull(miembros);
-        return new Grupo(id, nombre, fechaCreacion, estado, miembros);
+        return new Grupo(id, nombre, moneda, fechaCreacion, estado, miembros);
     }
 
     private static void validarNombre(String nombre) {
         if (nombre == null || nombre.isBlank()) {
             throw new InvariantViolationException("El nombre del grupo no puede estar vacío");
+        }
+    }
+
+    /** Todos los gastos del grupo deben usar esta moneda (ISO 4217): el balance suma montos sin convertir. */
+    private static void validarMoneda(String moneda) {
+        if (moneda == null || moneda.isBlank()) {
+            throw new InvariantViolationException("La moneda del grupo no puede estar vacía");
+        }
+        try {
+            Currency.getInstance(moneda);
+        } catch (IllegalArgumentException e) {
+            throw new InvariantViolationException("Código de moneda inválido (ISO 4217): " + moneda);
         }
     }
 
@@ -103,6 +120,10 @@ public final class Grupo {
 
     public String nombre() {
         return nombre;
+    }
+
+    public String moneda() {
+        return moneda;
     }
 
     public Instant fechaCreacion() {

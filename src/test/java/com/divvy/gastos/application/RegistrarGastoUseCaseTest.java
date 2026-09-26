@@ -26,6 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.divvy.shared.domain.ConsultorMonedaGrupo;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class RegistrarGastoUseCaseTest {
@@ -37,6 +39,9 @@ class RegistrarGastoUseCaseTest {
     private VerificadorMiembroGrupo verificadorMiembroGrupo;
 
     @Mock
+    private ConsultorMonedaGrupo consultorMonedaGrupo;
+
+    @Mock
     private DomainEventPublisher eventPublisher;
 
     @Test
@@ -46,9 +51,10 @@ class RegistrarGastoUseCaseTest {
         UUID pagadoPor = UUID.randomUUID();
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)).thenReturn(true);
+        when(consultorMonedaGrupo.monedaDe(grupoId)).thenReturn(Optional.of("PEN"));
         when(gastoRepository.guardar(any(Gasto.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, eventPublisher);
+        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo, eventPublisher);
         Gasto resultado = useCase.ejecutar(
                 actorId, grupoId, "Cena", new BigDecimal("50.00"), "PEN", pagadoPor,
                 Instant.now(), "Comida", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO));
@@ -71,7 +77,7 @@ class RegistrarGastoUseCaseTest {
         UUID pagadoPor = UUID.randomUUID();
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
 
-        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, eventPublisher);
+        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo, eventPublisher);
 
         assertThatThrownBy(() -> useCase.ejecutar(
                 actorId, grupoId, "Cena", new BigDecimal("50.00"), "PEN", pagadoPor,
@@ -90,11 +96,33 @@ class RegistrarGastoUseCaseTest {
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)).thenReturn(false);
 
-        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, eventPublisher);
+        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo, eventPublisher);
 
         assertThatThrownBy(() -> useCase.ejecutar(
                 actorId, grupoId, "Cena", new BigDecimal("50.00"), "PEN", pagadoPor,
                 Instant.now(), "Comida", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO)))
                 .isInstanceOf(InvariantViolationException.class);
+    }
+
+    @Test
+    void ejecutar_monedaDistintaALaDelGrupo_lanzaInvariantViolationYNoGuardaNiPublica() {
+        UUID grupoId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        UUID pagadoPor = UUID.randomUUID();
+        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)).thenReturn(true);
+        when(consultorMonedaGrupo.monedaDe(grupoId)).thenReturn(Optional.of("PEN"));
+
+        RegistrarGastoUseCase useCase = new RegistrarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo, eventPublisher);
+
+        assertThatThrownBy(() -> useCase.ejecutar(
+                actorId, grupoId, "Cena", new BigDecimal("50.00"), "USD", pagadoPor,
+                Instant.now(), "Comida", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO)))
+                .isInstanceOf(InvariantViolationException.class)
+                .hasMessageContaining("USD")
+                .hasMessageContaining("PEN");
+
+        verify(gastoRepository, never()).guardar(any());
+        verify(eventPublisher, never()).publicar(any());
     }
 }

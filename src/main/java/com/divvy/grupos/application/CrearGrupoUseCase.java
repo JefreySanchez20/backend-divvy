@@ -13,8 +13,8 @@ public class CrearGrupoUseCase {
         this.grupoRepository = grupoRepository;
     }
 
-    public Grupo ejecutar(String nombre, UUID creadorId) {
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), nombre, creadorId);
+    public Grupo ejecutar(String nombre, String moneda, UUID creadorId) {
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), nombre, moneda, creadorId);
         return grupoRepository.guardar(grupo);
     }
 }

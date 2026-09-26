@@ -29,7 +29,7 @@ class RemoverMiembroUseCaseTest {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
         UUID miembro3 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(grupoId, "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
         grupo.agregarMiembro(miembro3);
 
@@ -59,7 +59,7 @@ class RemoverMiembroUseCaseTest {
         UUID creadorId = UUID.randomUUID();
         UUID miembro2 = UUID.randomUUID();
         UUID miembro3 = UUID.randomUUID();
-        Grupo grupo = Grupo.crear(grupoId, "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(grupoId, "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(miembro2);
         grupo.agregarMiembro(miembro3);
 

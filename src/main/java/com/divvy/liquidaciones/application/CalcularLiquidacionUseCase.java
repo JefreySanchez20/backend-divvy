@@ -36,7 +36,7 @@ public class CalcularLiquidacionUseCase {
     }
 
     public Liquidacion ejecutar(UUID actorId, UUID grupoId) {
-        if (!verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)) {
+        if (!verificadorMiembroGrupo.esMiembro(grupoId, actorId)) {
             throw new UnauthorizedOperationException("Debes ser miembro del grupo para consultar su liquidación");
         }
 

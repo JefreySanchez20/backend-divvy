@@ -4,6 +4,7 @@ import com.divvy.gastos.domain.DivisionGasto;
 import com.divvy.gastos.domain.Gasto;
 import com.divvy.gastos.domain.GastoRepository;
 import com.divvy.gastos.domain.TipoDivision;
+import com.divvy.shared.domain.ConsultorMonedaGrupo;
 import com.divvy.shared.domain.VerificadorMiembroGrupo;
 import com.divvy.shared.domain.Dinero;
 import com.divvy.shared.domain.exception.EntityNotFoundException;
@@ -19,10 +20,16 @@ public class EditarGastoUseCase {
 
     private final GastoRepository gastoRepository;
     private final VerificadorMiembroGrupo verificadorMiembroGrupo;
+    private final ConsultorMonedaGrupo consultorMonedaGrupo;
 
-    public EditarGastoUseCase(GastoRepository gastoRepository, VerificadorMiembroGrupo verificadorMiembroGrupo) {
+    public EditarGastoUseCase(
+            GastoRepository gastoRepository,
+            VerificadorMiembroGrupo verificadorMiembroGrupo,
+            ConsultorMonedaGrupo consultorMonedaGrupo
+    ) {
         this.gastoRepository = gastoRepository;
         this.verificadorMiembroGrupo = verificadorMiembroGrupo;
+        this.consultorMonedaGrupo = consultorMonedaGrupo;
     }
 
     public Gasto ejecutar(
@@ -39,6 +46,7 @@ public class EditarGastoUseCase {
         if (!verificadorMiembroGrupo.esMiembroActivo(gasto.grupoId(), pagadoPor)) {
             throw new InvariantViolationException("El usuario que pagó debe ser miembro activo del grupo");
         }
+        MonedaDelGrupo.exigir(consultorMonedaGrupo, gasto.grupoId(), moneda);
 
         Dinero dinero = Dinero.de(monto, moneda);
         DivisionGasto division = DivisionGasto.crear(tipoDivision, dinero, detalleDivision);

@@ -245,4 +245,31 @@ class LiquidacionControllerIT {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("UNAUTHORIZED_OPERATION"));
     }
+
+    @Test
+    void grupoArchivado_losMiembrosPuedenVerLasDeudasElHistorialYSaldarlas() throws Exception {
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements").header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.debts", hasSize(2)));
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements/history").header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk());
+
+        // Archivar el grupo no impide cobrar lo que se debe: se puede saldar sobre el cálculo vigente.
+        JsonNode vigente = calcularComoAna();
+        mockMvc.perform(post("/api/settlements/" + vigente.get("id").asString() + "/debts/" + deudaDe(vigente, beto) + "/pay")
+                        .header("Authorization", "Bearer " + tokenBeto))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void grupoArchivado_unUsuarioAjenoSigueSinPoderVerLasDeudas() throws Exception {
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements").header("Authorization", "Bearer " + tokenAjeno))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements/history").header("Authorization", "Bearer " + tokenAjeno))
+                .andExpect(status().isForbidden());
+    }
 }

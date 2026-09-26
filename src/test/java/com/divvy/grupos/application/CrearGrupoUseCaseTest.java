@@ -28,9 +28,10 @@ class CrearGrupoUseCaseTest {
         CrearGrupoUseCase useCase = new CrearGrupoUseCase(grupoRepository);
         UUID creadorId = UUID.randomUUID();
 
-        Grupo resultado = useCase.ejecutar("Roomies", creadorId);
+        Grupo resultado = useCase.ejecutar("Roomies", "USD", creadorId);
 
         assertThat(resultado.nombre()).isEqualTo("Roomies");
+        assertThat(resultado.moneda()).isEqualTo("USD");
         assertThat(resultado.esAdmin(creadorId)).isTrue();
 
         ArgumentCaptor<Grupo> captor = ArgumentCaptor.forClass(Grupo.class);

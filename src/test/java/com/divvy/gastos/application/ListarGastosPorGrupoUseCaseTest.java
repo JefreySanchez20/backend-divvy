@@ -40,7 +40,7 @@ class ListarGastosPorGrupoUseCaseTest {
         DivisionGasto division = DivisionGasto.crear(TipoDivision.IGUAL, monto, Map.of(pagadoPor, BigDecimal.ZERO));
         Gasto gasto = Gasto.registrar(UUID.randomUUID(), grupoId, "Cena", monto, pagadoPor, Instant.now(), "Comida", division);
 
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(true);
         when(gastoRepository.buscarPorGrupo(grupoId)).thenReturn(List.of(gasto));
 
         ListarGastosPorGrupoUseCase useCase = new ListarGastosPorGrupoUseCase(gastoRepository, verificadorMiembroGrupo);
@@ -52,7 +52,7 @@ class ListarGastosPorGrupoUseCaseTest {
     void ejecutar_actorNoEsMiembro_lanzaUnauthorized() {
         UUID grupoId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(false);
 
         ListarGastosPorGrupoUseCase useCase = new ListarGastosPorGrupoUseCase(gastoRepository, verificadorMiembroGrupo);
 

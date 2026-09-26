@@ -202,4 +202,99 @@ class GastoControllerIT {
         mockMvc.perform(get("/api/groups/" + otroGrupoId + "/expenses/" + gastoId).header("Authorization", bearer(token1)))
                 .andExpect(status().isNotFound());
     }
+
+    private Map<String, Object> conMoneda(Map<String, Object> body, String moneda) {
+        Map<String, Object> copia = new java.util.HashMap<>(body);
+        copia.put("currency", moneda);
+        return copia;
+    }
+
+    @Test
+    void registrar_monedaDistintaALaDelGrupo_devuelve400() throws Exception {
+        // El grupo de la prueba usa la moneda por defecto (PEN).
+        mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(conMoneda(gastoIgualBody(usuario1, "100.00"), "USD"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("PEN")));
+    }
+
+    @Test
+    void registrar_grupoEnDolares_aceptaDolaresYRechazaSoles() throws Exception {
+        jdbcTemplate.update("UPDATE grupos SET moneda = 'USD' WHERE id = ?", grupoId);
+
+        mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(conMoneda(gastoIgualBody(usuario1, "100.00"), "USD"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currency").value("USD"));
+
+        mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(gastoIgualBody(usuario1, "100.00"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void editar_monedaDistintaALaDelGrupo_devuelve400() throws Exception {
+        String response = mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(gastoIgualBody(usuario1, "100.00"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String gastoId = objectMapper.readTree(response).get("id").asString();
+
+        mockMvc.perform(put("/api/groups/" + grupoId + "/expenses/" + gastoId)
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(conMoneda(gastoIgualBody(usuario1, "100.00"), "EUR"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
+    }
+
+    @Test
+    void grupoArchivado_conservaElHistorialParaSusMiembrosPeroNoAceptaCambios() throws Exception {
+        String response = mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(gastoIgualBody(usuario1, "100.00"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String gastoId = objectMapper.readTree(response).get("id").asString();
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+
+        // Leer: sigue permitido para los miembros...
+        mockMvc.perform(get("/api/groups/" + grupoId + "/expenses").header("Authorization", bearer(token2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+        mockMvc.perform(get("/api/groups/" + grupoId + "/expenses/" + gastoId).header("Authorization", bearer(token2)))
+                .andExpect(status().isOk());
+
+        // ...pero registrar, editar y eliminar ya no.
+        mockMvc.perform(post("/api/groups/" + grupoId + "/expenses")
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(gastoIgualBody(usuario1, "50.00"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/groups/" + grupoId + "/expenses/" + gastoId)
+                        .header("Authorization", bearer(token1))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(gastoIgualBody(usuario1, "70.00"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/groups/" + grupoId + "/expenses/" + gastoId).header("Authorization", bearer(token1)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void grupoArchivado_unUsuarioAjenoSigueSinPoderLeerElHistorial() throws Exception {
+        jdbcTemplate.update("UPDATE grupos SET estado = 'ARCHIVADO' WHERE id = ?", grupoId);
+
+        mockMvc.perform(get("/api/groups/" + grupoId + "/expenses").header("Authorization", bearer(tokenAjeno)))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -49,7 +49,7 @@ class GrupoRepositoryImplIT {
     void guardarYBuscarPorId_persisteElGrupoConSusMiembros() {
         UUID creadorId = crearUsuario();
         UUID segundoMiembro = crearUsuario();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(segundoMiembro);
 
         repository.guardar(grupo);
@@ -73,8 +73,8 @@ class GrupoRepositoryImplIT {
         UUID usuarioA = crearUsuario();
         UUID usuarioB = crearUsuario();
 
-        Grupo grupoDeA = Grupo.crear(UUID.randomUUID(), "Grupo de A", usuarioA);
-        Grupo grupoDeB = Grupo.crear(UUID.randomUUID(), "Grupo de B", usuarioB);
+        Grupo grupoDeA = Grupo.crear(UUID.randomUUID(), "Grupo de A", "PEN", usuarioA);
+        Grupo grupoDeB = Grupo.crear(UUID.randomUUID(), "Grupo de B", "PEN", usuarioB);
         repository.guardar(grupoDeA);
         repository.guardar(grupoDeB);
 
@@ -88,7 +88,7 @@ class GrupoRepositoryImplIT {
     void guardar_actualizaGrupoExistenteTrasArchivar() {
         UUID creadorId = crearUsuario();
         UUID segundoMiembro = crearUsuario();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         grupo.agregarMiembro(segundoMiembro);
         repository.guardar(grupo);
 
@@ -103,7 +103,7 @@ class GrupoRepositoryImplIT {
     @Test
     void miembroPersisteConElRolCorrecto() {
         UUID creadorId = crearUsuario();
-        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", creadorId);
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Roomies", "PEN", creadorId);
         repository.guardar(grupo);
 
         Grupo recuperado = repository.buscarPorId(grupo.id()).orElseThrow();
@@ -111,5 +111,17 @@ class GrupoRepositoryImplIT {
         assertThat(recuperado.miembros()).hasSize(1);
         assertThat(recuperado.miembros().get(0).rol()).isEqualTo(Rol.ADMIN);
         assertThat(recuperado.miembros().get(0).usuarioId()).isEqualTo(creadorId);
+    }
+
+    @Test
+    void guardarYBuscarPorId_persisteLaMonedaDelGrupo() {
+        Grupo grupo = Grupo.crear(UUID.randomUUID(), "Viaje", "USD", crearUsuario());
+
+        repository.guardar(grupo);
+        grupoJpaRepository.flush(); // la consulta JDBC de abajo necesita ver lo guardado
+
+        assertThat(repository.buscarPorId(grupo.id()).orElseThrow().moneda()).isEqualTo("USD");
+        assertThat(jdbcTemplate.queryForObject("SELECT moneda FROM grupos WHERE id = ?", String.class, grupo.id()))
+                .isEqualTo("USD");
     }
 }

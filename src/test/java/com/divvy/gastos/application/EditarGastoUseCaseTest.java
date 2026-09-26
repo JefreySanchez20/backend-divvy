@@ -23,6 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import com.divvy.shared.domain.ConsultorMonedaGrupo;
+import com.divvy.shared.domain.exception.InvariantViolationException;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class EditarGastoUseCaseTest {
@@ -32,6 +36,9 @@ class EditarGastoUseCaseTest {
 
     @Mock
     private VerificadorMiembroGrupo verificadorMiembroGrupo;
+
+    @Mock
+    private ConsultorMonedaGrupo consultorMonedaGrupo;
 
     private Gasto gastoExistente(UUID grupoId, UUID pagadoPor) {
         Dinero monto = Dinero.de(new BigDecimal("50.00"), "PEN");
@@ -49,9 +56,10 @@ class EditarGastoUseCaseTest {
         when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)).thenReturn(true);
+        when(consultorMonedaGrupo.monedaDe(grupoId)).thenReturn(Optional.of("PEN"));
         when(gastoRepository.guardar(any(Gasto.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo);
+        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
         Gasto resultado = useCase.ejecutar(
                 actorId, grupoId, gasto.id(), "Cena actualizada", new BigDecimal("70.00"), "PEN", pagadoPor,
                 Instant.now(), "Restaurante", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO));
@@ -65,7 +73,7 @@ class EditarGastoUseCaseTest {
         UUID gastoId = UUID.randomUUID();
         when(gastoRepository.buscarPorId(gastoId)).thenReturn(Optional.empty());
 
-        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo);
+        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
 
         assertThatThrownBy(() -> useCase.ejecutar(
                 UUID.randomUUID(), UUID.randomUUID(), gastoId, "Cena", new BigDecimal("50.00"), "PEN", UUID.randomUUID(),
@@ -83,7 +91,7 @@ class EditarGastoUseCaseTest {
         when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
         when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
 
-        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo);
+        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
 
         assertThatThrownBy(() -> useCase.ejecutar(
                 actorId, grupoId, gasto.id(), "Cena", new BigDecimal("50.00"), "PEN", pagadoPor,
@@ -100,11 +108,34 @@ class EditarGastoUseCaseTest {
 
         when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
 
-        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo);
+        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
 
         assertThatThrownBy(() -> useCase.ejecutar(
                 UUID.randomUUID(), otroGrupoId, gasto.id(), "Cena", new BigDecimal("50.00"), "PEN", pagadoPor,
                 Instant.now(), "Comida", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO)))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void ejecutar_monedaDistintaALaDelGrupo_lanzaInvariantViolationYNoGuarda() {
+        UUID grupoId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        UUID pagadoPor = UUID.randomUUID();
+        Gasto gasto = gastoExistente(grupoId, pagadoPor);
+
+        when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
+        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, pagadoPor)).thenReturn(true);
+        when(consultorMonedaGrupo.monedaDe(grupoId)).thenReturn(Optional.of("PEN"));
+
+        EditarGastoUseCase useCase = new EditarGastoUseCase(gastoRepository, verificadorMiembroGrupo, consultorMonedaGrupo);
+
+        assertThatThrownBy(() -> useCase.ejecutar(
+                actorId, grupoId, gasto.id(), "Cena", new BigDecimal("50.00"), "EUR", pagadoPor,
+                Instant.now(), "Comida", TipoDivision.IGUAL, Map.of(pagadoPor, BigDecimal.ZERO)))
+                .isInstanceOf(InvariantViolationException.class)
+                .hasMessageContaining("EUR");
+
+        verify(gastoRepository, never()).guardar(any());
     }
 }

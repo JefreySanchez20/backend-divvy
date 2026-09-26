@@ -170,4 +170,117 @@ class GrupoControllerIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
     }
+
+    private String crearGrupoConBody(Map<String, String> body) throws Exception {
+        return mockMvc.perform(post("/api/groups")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void crear_sinMoneda_usaPENPorDefecto() throws Exception {
+        mockMvc.perform(post("/api/groups")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Roomies"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currency").value("PEN"));
+    }
+
+    @Test
+    void crear_conMoneda_laDevuelveAlCrearYAlObtener() throws Exception {
+        String response = mockMvc.perform(post("/api/groups")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Viaje", "currency", "USD"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currency").value("USD"))
+                .andReturn().getResponse().getContentAsString();
+        String grupoId = objectMapper.readTree(response).get("id").asString();
+
+        mockMvc.perform(get("/api/groups/" + grupoId).header("Authorization", bearer(tokenCreador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currency").value("USD"));
+        mockMvc.perform(get("/api/groups").header("Authorization", bearer(tokenCreador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currency").value("USD"));
+    }
+
+    @Test
+    void crear_monedaInvalida_devuelve400() throws Exception {
+        mockMvc.perform(post("/api/groups")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Viaje", "currency", "DOLARES"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
+    }
+
+    private String crearGrupoDelCreador() throws Exception {
+        String response = mockMvc.perform(post("/api/groups")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Privado"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("id").asString();
+    }
+
+    private String agregarMiembroBody(UUID userId) throws Exception {
+        return objectMapper.writeValueAsString(Map.of("userId", userId.toString()));
+    }
+
+    @Test
+    void obtener_usuarioNoMiembro_devuelve403() throws Exception {
+        String grupoId = crearGrupoDelCreador();
+
+        mockMvc.perform(get("/api/groups/" + grupoId).header("Authorization", bearer(tokenInvitado)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED_OPERATION"));
+    }
+
+    @Test
+    void obtener_grupoArchivado_sigueVisibleParaSusMiembros() throws Exception {
+        String grupoId = crearGrupoDelCreador();
+        mockMvc.perform(patch("/api/groups/" + grupoId + "/archive").header("Authorization", bearer(tokenCreador)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/groups/" + grupoId).header("Authorization", bearer(tokenCreador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+    }
+
+    @Test
+    void agregarMiembro_desconocidoIntentaMeterseASiMismo_devuelve403YNoQuedaAdentro() throws Exception {
+        String grupoId = crearGrupoDelCreador();
+
+        mockMvc.perform(post("/api/groups/" + grupoId + "/members")
+                        .header("Authorization", bearer(tokenInvitado))
+                        .contentType("application/json")
+                        .content(agregarMiembroBody(invitadoId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED_OPERATION"));
+
+        mockMvc.perform(get("/api/groups/" + grupoId).header("Authorization", bearer(tokenCreador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.members", hasSize(1)));
+    }
+
+    @Test
+    void agregarMiembro_miembroSinRolAdmin_devuelve403() throws Exception {
+        String grupoId = crearGrupoDelCreador();
+        mockMvc.perform(post("/api/groups/" + grupoId + "/members")
+                        .header("Authorization", bearer(tokenCreador))
+                        .contentType("application/json")
+                        .content(agregarMiembroBody(invitadoId)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/groups/" + grupoId + "/members")
+                        .header("Authorization", bearer(tokenInvitado))
+                        .contentType("application/json")
+                        .content(agregarMiembroBody(crearUsuario())))
+                .andExpect(status().isForbidden());
+    }
 }

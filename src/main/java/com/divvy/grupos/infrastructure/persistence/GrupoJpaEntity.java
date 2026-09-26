@@ -27,6 +27,9 @@ public class GrupoJpaEntity {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
+    @Column(name = "moneda", nullable = false, length = 3)
+    private String moneda;
+
     @Column(name = "fecha_creacion", nullable = false)
     private Instant fechaCreacion;
 
@@ -41,9 +44,10 @@ public class GrupoJpaEntity {
     protected GrupoJpaEntity() {
     }
 
-    public GrupoJpaEntity(UUID id, String nombre, Instant fechaCreacion, EstadoGrupo estado, List<MiembroEmbeddable> miembros) {
+    public GrupoJpaEntity(UUID id, String nombre, String moneda, Instant fechaCreacion, EstadoGrupo estado, List<MiembroEmbeddable> miembros) {
         this.id = id;
         this.nombre = nombre;
+        this.moneda = moneda;
         this.fechaCreacion = fechaCreacion;
         this.estado = estado;
         this.miembros = miembros;
@@ -55,6 +59,10 @@ public class GrupoJpaEntity {
 
     public String getNombre() {
         return nombre;
+    }
+
+    public String getMoneda() {
+        return moneda;
     }
 
     public Instant getFechaCreacion() {

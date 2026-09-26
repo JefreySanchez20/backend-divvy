@@ -41,7 +41,7 @@ class CalcularLiquidacionUseCaseTest {
         UUID deudor = UUID.randomUUID();
         UUID acreedor = UUID.randomUUID();
 
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(true);
         when(lectorBalanceGrupo.obtenerBalances(grupoId)).thenReturn(Map.of(
                 "PEN", Map.of(deudor, new BigDecimal("-50.00"), acreedor, new BigDecimal("50.00"))
         ));
@@ -64,7 +64,7 @@ class CalcularLiquidacionUseCaseTest {
         UUID grupoId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
 
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(true);
         when(lectorBalanceGrupo.obtenerBalances(grupoId)).thenReturn(Map.of());
         when(liquidacionRepository.guardar(any(Liquidacion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -80,7 +80,7 @@ class CalcularLiquidacionUseCaseTest {
     void ejecutar_actorNoEsMiembro_lanzaUnauthorized() {
         UUID grupoId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(false);
 
         CalcularLiquidacionUseCase useCase = new CalcularLiquidacionUseCase(
                 lectorBalanceGrupo, calculadoraDeudas, liquidacionRepository, verificadorMiembroGrupo);

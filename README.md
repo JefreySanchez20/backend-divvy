@@ -105,10 +105,10 @@ Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagg
 | `POST` | `/api/auth/reset-password` | Restablece contraseña con token | — |
 | `GET` | `/api/users?email=` | Buscar usuario por email (para agregarlo a un grupo) | ✅ |
 | `GET` | `/api/users/batch?ids=` | Buscar usuarios por id, en batch, máx. 100 ids (para resolver nombres de miembros de un grupo) | ✅ |
-| `POST` | `/api/groups` | Crear grupo | ✅ |
+| `POST` | `/api/groups` | Crear grupo (`name` y `currency` opcional, ISO 4217, por defecto `PEN`); la moneda es fija y todos sus gastos deben usarla | ✅ |
 | `GET` | `/api/groups` | Listar grupos del usuario | ✅ |
-| `GET` | `/api/groups/{id}` | Detalle de un grupo | ✅ |
-| `POST` | `/api/groups/{id}/members` | Agregar miembro | ✅ |
+| `GET` | `/api/groups/{id}` | Detalle de un grupo (solo miembros; 403 si no lo eres) | ✅ |
+| `POST` | `/api/groups/{id}/members` | Agregar miembro (solo un ADMIN del grupo) | ✅ |
 | `DELETE` | `/api/groups/{id}/members/{userId}` | Quitar miembro | ✅ |
 | `PATCH` | `/api/groups/{id}/archive` | Archivar grupo | ✅ |
 | `POST` | `/api/groups/{groupId}/expenses` | Registrar gasto | ✅ |

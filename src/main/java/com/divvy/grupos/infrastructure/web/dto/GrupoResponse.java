@@ -7,6 +7,7 @@ import java.util.UUID;
 public record GrupoResponse(
         UUID id,
         String name,
+        String currency,
         Instant createdAt,
         String status,
         List<MiembroResponse> members

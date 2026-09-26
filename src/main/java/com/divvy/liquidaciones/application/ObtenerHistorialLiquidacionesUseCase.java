@@ -21,7 +21,7 @@ public class ObtenerHistorialLiquidacionesUseCase {
     }
 
     public List<Liquidacion> ejecutar(UUID actorId, UUID grupoId) {
-        if (!verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)) {
+        if (!verificadorMiembroGrupo.esMiembro(grupoId, actorId)) {
             throw new UnauthorizedOperationException("Debes ser miembro del grupo para ver su historial de liquidaciones");
         }
         return liquidacionRepository.buscarPorGrupo(grupoId);

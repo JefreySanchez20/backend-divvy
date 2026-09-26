@@ -42,7 +42,7 @@ class ObtenerGastoUseCaseTest {
         Gasto gasto = Gasto.registrar(UUID.randomUUID(), grupoId, "Cena", monto, pagadoPor, Instant.now(), "Comida", division);
 
         when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(true);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(true);
 
         ObtenerGastoUseCase useCase = new ObtenerGastoUseCase(gastoRepository, verificadorMiembroGrupo);
 
@@ -70,7 +70,7 @@ class ObtenerGastoUseCaseTest {
         Gasto gasto = Gasto.registrar(UUID.randomUUID(), grupoId, "Cena", monto, pagadoPor, Instant.now(), "Comida", division);
 
         when(gastoRepository.buscarPorId(gasto.id())).thenReturn(Optional.of(gasto));
-        when(verificadorMiembroGrupo.esMiembroActivo(grupoId, actorId)).thenReturn(false);
+        when(verificadorMiembroGrupo.esMiembro(grupoId, actorId)).thenReturn(false);
 
         ObtenerGastoUseCase useCase = new ObtenerGastoUseCase(gastoRepository, verificadorMiembroGrupo);
 
