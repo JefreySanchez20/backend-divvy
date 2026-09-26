@@ -164,6 +164,76 @@ class LiquidacionRepositoryImplIT {
         assertThat(balances.get("PEN").get(beto)).isEqualByComparingTo("-30.00");
     }
 
+    private void guardarDeudaPagada(UUID grupoId, UUID deudor, UUID acreedor, String monto) {
+        Deuda deuda = Deuda.crear(UUID.randomUUID(), deudor, acreedor, Dinero.de(new BigDecimal(monto), "PEN"));
+        deuda.marcarComoPagada();
+        repository.guardar(Liquidacion.calcular(UUID.randomUUID(), grupoId, List.of(deuda)));
+        liquidacionJpaRepository.flush(); // el lector usa JDBC: hay que volcar antes de consultar
+    }
+
+    @Test
+    void lectorBalanceGrupo_deudaPagadaEnSuTotal_saldaElBalance() {
+        UUID grupoId = crearGrupo();
+        UUID ana = crearUsuario();
+        UUID beto = crearUsuario();
+        crearGasto(grupoId, ana, new BigDecimal("100.00"), "PEN",
+                Map.of(ana, new BigDecimal("50.00"), beto, new BigDecimal("50.00")));
+
+        guardarDeudaPagada(grupoId, beto, ana, "50.00");
+
+        assertThat(lectorBalanceGrupo.obtenerBalances(grupoId)).isEmpty();
+    }
+
+    @Test
+    void lectorBalanceGrupo_deudaPagadaParcialmente_dejaElResto() {
+        UUID grupoId = crearGrupo();
+        UUID ana = crearUsuario();
+        UUID beto = crearUsuario();
+        crearGasto(grupoId, ana, new BigDecimal("100.00"), "PEN",
+                Map.of(ana, new BigDecimal("50.00"), beto, new BigDecimal("50.00")));
+
+        guardarDeudaPagada(grupoId, beto, ana, "20.00");
+
+        Map<String, Map<UUID, BigDecimal>> balances = lectorBalanceGrupo.obtenerBalances(grupoId);
+        assertThat(balances.get("PEN").get(ana)).isEqualByComparingTo("30.00");
+        assertThat(balances.get("PEN").get(beto)).isEqualByComparingTo("-30.00");
+    }
+
+    @Test
+    void lectorBalanceGrupo_ignoraDeudasPendientesYPagosDeOtrosGrupos() {
+        UUID grupoId = crearGrupo();
+        UUID otroGrupoId = crearGrupo();
+        UUID ana = crearUsuario();
+        UUID beto = crearUsuario();
+        crearGasto(grupoId, ana, new BigDecimal("100.00"), "PEN",
+                Map.of(ana, new BigDecimal("50.00"), beto, new BigDecimal("50.00")));
+
+        // Una deuda solo pendiente, y un pago hecho en otro grupo: ninguno debe contar.
+        repository.guardar(Liquidacion.calcular(UUID.randomUUID(), grupoId,
+                List.of(Deuda.crear(UUID.randomUUID(), beto, ana, Dinero.de(new BigDecimal("50.00"), "PEN")))));
+        guardarDeudaPagada(otroGrupoId, beto, ana, "50.00");
+
+        Map<String, Map<UUID, BigDecimal>> balances = lectorBalanceGrupo.obtenerBalances(grupoId);
+        assertThat(balances.get("PEN").get(ana)).isEqualByComparingTo("50.00");
+        assertThat(balances.get("PEN").get(beto)).isEqualByComparingTo("-50.00");
+    }
+
+    @Test
+    void buscarUltimaPorGrupo_devuelveLaMasRecienteYVacioSiNoHay() {
+        UUID grupoId = crearGrupo();
+        UUID otroGrupoId = crearGrupo();
+        assertThat(repository.buscarUltimaPorGrupo(grupoId)).isEmpty();
+
+        UUID antigua = UUID.randomUUID();
+        UUID reciente = UUID.randomUUID();
+        UUID deOtroGrupo = UUID.randomUUID();
+        repository.guardar(Liquidacion.reconstruir(antigua, grupoId, Instant.parse("2026-01-01T10:00:00Z"), List.of()));
+        repository.guardar(Liquidacion.reconstruir(reciente, grupoId, Instant.parse("2026-01-02T10:00:00Z"), List.of()));
+        repository.guardar(Liquidacion.reconstruir(deOtroGrupo, otroGrupoId, Instant.parse("2026-01-03T10:00:00Z"), List.of()));
+
+        assertThat(repository.buscarUltimaPorGrupo(grupoId)).get().extracting(Liquidacion::id).isEqualTo(reciente);
+    }
+
     @Test
     void lectorBalanceGrupo_sinGastos_devuelveMapaVacio() {
         UUID grupoId = crearGrupo();

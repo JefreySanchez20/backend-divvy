@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
@@ -174,6 +175,68 @@ class LiquidacionControllerIT {
                         .header("Authorization", "Bearer " + tokenAjeno))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("UNAUTHORIZED_OPERATION"));
+    }
+
+    private JsonNode calcularComoAna() throws Exception {
+        String response = mockMvc.perform(get("/api/groups/" + grupoId + "/settlements").header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response);
+    }
+
+    private String deudaDe(JsonNode liquidacion, UUID deudor) {
+        for (JsonNode deuda : liquidacion.get("debts")) {
+            if (deuda.get("debtorId").asString().equals(deudor.toString())) {
+                return deuda.get("id").asString();
+            }
+        }
+        throw new IllegalStateException("No hay deuda del usuario " + deudor);
+    }
+
+    @Test
+    void calcular_despuesDePagarUnaDeuda_yaNoLaVuelveAGenerar() throws Exception {
+        JsonNode primera = calcularComoAna();
+        String deudaBetoId = deudaDe(primera, beto);
+
+        mockMvc.perform(post("/api/settlements/" + primera.get("id").asString() + "/debts/" + deudaBetoId + "/pay")
+                        .header("Authorization", "Bearer " + tokenBeto))
+                .andExpect(status().isOk());
+
+        // Beto ya pagó sus 30: al recalcular solo debe quedar la deuda de Carla.
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements").header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.debts", hasSize(1)))
+                .andExpect(jsonPath("$.debts[0].debtorId").value(carla.toString()))
+                .andExpect(jsonPath("$.debts[0].amount").value(30.00))
+                .andExpect(jsonPath("$.debts[0].status").value("PENDING"));
+    }
+
+    @Test
+    void calcular_despuesDePagarTodasLasDeudas_noQuedanDeudas() throws Exception {
+        JsonNode primera = calcularComoAna();
+        String liquidacionId = primera.get("id").asString();
+
+        mockMvc.perform(post("/api/settlements/" + liquidacionId + "/debts/" + deudaDe(primera, beto) + "/pay")
+                        .header("Authorization", "Bearer " + tokenBeto))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/settlements/" + liquidacionId + "/debts/" + deudaDe(primera, carla) + "/pay")
+                        .header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/groups/" + grupoId + "/settlements").header("Authorization", "Bearer " + tokenAna))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.debts", hasSize(0)));
+    }
+
+    @Test
+    void pagar_liquidacionDesactualizada_devuelve400() throws Exception {
+        JsonNode vieja = calcularComoAna();
+        calcularComoAna(); // otra consulta genera una liquidación más reciente
+
+        mockMvc.perform(post("/api/settlements/" + vieja.get("id").asString() + "/debts/" + deudaDe(vieja, beto) + "/pay")
+                        .header("Authorization", "Bearer " + tokenBeto))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVARIANT_VIOLATED"));
     }
 
     @Test

@@ -11,4 +11,7 @@ public interface LiquidacionRepository {
     Optional<Liquidacion> buscarPorId(UUID id);
 
     List<Liquidacion> buscarPorGrupo(UUID grupoId);
+
+    /** La liquidación calculada más recientemente para el grupo, si hay alguna. */
+    Optional<Liquidacion> buscarUltimaPorGrupo(UUID grupoId);
 }

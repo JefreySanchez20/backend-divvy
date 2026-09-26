@@ -13,6 +13,9 @@ import java.util.UUID;
 @Repository
 public class LectorBalanceGrupoImpl implements LectorBalanceGrupo {
 
+    // Una deuda PAGADA es dinero que ya cambió de manos: el deudor debe menos (+monto)
+    // y el acreedor tiene menos por cobrar (-monto). Sin esto, cada recálculo
+    // volvería a generar las deudas ya saldadas porque el balance solo miraría los gastos.
     private static final String QUERY = """
             SELECT usuario_id, moneda, SUM(monto) AS neto FROM (
                 SELECT pagado_por AS usuario_id, moneda, monto FROM gastos WHERE grupo_id = ?
@@ -20,6 +23,14 @@ public class LectorBalanceGrupoImpl implements LectorBalanceGrupo {
                 SELECT d.usuario_id, g.moneda, -d.valor FROM gasto_division_detalle d
                 JOIN gastos g ON g.id = d.gasto_id
                 WHERE g.grupo_id = ?
+                UNION ALL
+                SELECT p.deudor_id, p.moneda, p.monto FROM deudas p
+                JOIN liquidaciones l ON l.id = p.liquidacion_id
+                WHERE l.grupo_id = ? AND p.estado = 'PAGADA'
+                UNION ALL
+                SELECT p.acreedor_id, p.moneda, -p.monto FROM deudas p
+                JOIN liquidaciones l ON l.id = p.liquidacion_id
+                WHERE l.grupo_id = ? AND p.estado = 'PAGADA'
             ) movimientos
             GROUP BY usuario_id, moneda
             HAVING SUM(monto) <> 0
@@ -33,7 +44,7 @@ public class LectorBalanceGrupoImpl implements LectorBalanceGrupo {
 
     @Override
     public Map<String, Map<UUID, BigDecimal>> obtenerBalances(UUID grupoId) {
-        List<Map<String, Object>> filas = jdbcTemplate.queryForList(QUERY, grupoId, grupoId);
+        List<Map<String, Object>> filas = jdbcTemplate.queryForList(QUERY, grupoId, grupoId, grupoId, grupoId);
 
         Map<String, Map<UUID, BigDecimal>> resultado = new LinkedHashMap<>();
         for (Map<String, Object> fila : filas) {

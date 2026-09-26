@@ -47,6 +47,12 @@ public class LiquidacionRepositoryImpl implements LiquidacionRepository {
                 .toList();
     }
 
+    @Override
+    public Optional<Liquidacion> buscarUltimaPorGrupo(UUID grupoId) {
+        return jpaRepository.findFirstByGrupoIdOrderByFechaCalculoDesc(grupoId)
+                .map(LiquidacionRepositoryImpl::toDomain);
+    }
+
     private static Liquidacion toDomain(LiquidacionJpaEntity entity) {
         List<Deuda> deudas = entity.getDeudas().stream()
                 .map(d -> Deuda.reconstruir(

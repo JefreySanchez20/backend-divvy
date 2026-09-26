@@ -118,7 +118,7 @@ Documentación interactiva (Swagger UI): en local **`http://localhost:8080/swagg
 | `DELETE` | `/api/groups/{groupId}/expenses/{id}` | Eliminar gasto | ✅ |
 | `GET` | `/api/groups/{groupId}/settlements` | Deudas pendientes del grupo | ✅ |
 | `GET` | `/api/groups/{groupId}/settlements/history` | Historial de pagos | ✅ |
-| `POST` | `/api/settlements/{id}/debts/{debtId}/pay` | Registrar el pago de una deuda | ✅ |
+| `POST` | `/api/settlements/{id}/debts/{debtId}/pay` | Registrar el pago de una deuda (solo de la liquidación más reciente del grupo; el pago se descuenta del balance en el siguiente cálculo) | ✅ |
 | `GET` | `/actuator/health` | Health check | — |
 
 `✅` = requiere header `Authorization: Bearer <token>`.
