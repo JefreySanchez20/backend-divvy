@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,7 +22,13 @@ public class GmailEmailSender implements EmailSender {
         this.mailSender = mailSender;
     }
 
+    /**
+     * Async a propósito: forgot-password debe responder rápido pase lo que pase con
+     * Gmail (la regla de negocio ya es "siempre 200"). Si el envío falla o se cuelga,
+     * que se quede colgado este hilo en segundo plano, no la respuesta HTTP al usuario.
+     */
     @Override
+    @Async
     public void enviar(String destinatario, String asunto, String cuerpoHtml) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();

@@ -34,6 +34,12 @@ spring:
           auth: true
           starttls:
             enable: true
+          # Sin esto, JavaMail espera indefinidamente si Gmail tarda o la conexión se
+          # cuelga: la request de forgot-password quedaba colgada hasta que el proxy de
+          # Render la cortaba, y el navegador lo mostraba como "no se pudo conectar".
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 server:
   port: ${PORT:${SERVER_PORT:8080}}
