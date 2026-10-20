@@ -49,9 +49,11 @@ divvy:
   password-reset:
     expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:30}
   email:
-    # Gmail SMTP (puertos 25/465/587) está bloqueado en el plan gratuito de Render,
-    # por eso el correo de recuperación se manda por la API HTTP de Brevo, no por SMTP.
-    brevo-api-key: ${BREVO_API_KEY:}
+    # Gmail SMTP (puertos 25/465/587) está bloqueado en el plan gratuito de Render, por
+    # eso el correo de recuperación se manda por la API HTTP de un proveedor transaccional
+    # (hoy SendGrid, ver SendGridEmailSender), no por SMTP. Nombres de propiedad genéricos
+    # a propósito: ya cambiamos de proveedor una vez (Brevo suspendió la cuenta).
+    api-key: ${EMAIL_API_KEY:}
     remitente: ${MAIL_FROM:}
   rate-limit:
     window-minutes: ${RATE_LIMIT_WINDOW_MINUTES:15}

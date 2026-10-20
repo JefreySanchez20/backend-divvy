@@ -6,6 +6,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -19,16 +20,21 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 /**
  * Reproduce el bug real visto en producción con el envío anterior por Gmail SMTP: Render
  * bloquea los puertos SMTP salientes en su plan gratuito, así que la request de
- * forgot-password se colgaba hasta hacer timeout. Brevo manda por HTTPS (443), que nunca
- * está bloqueado, y el envío sigue siendo async para no depender de qué tan rápido
+ * forgot-password se colgaba hasta hacer timeout. SendGrid manda por HTTPS (443), que
+ * nunca está bloqueado, y el envío sigue siendo async para no depender de qué tan rápido
  * responda el proveedor de correo.
+ *
+ * OJO: estos tests usan MockRestServiceServer — nunca pegan a la API real de SendGrid.
+ * No repetir aquí el error anterior de probar contra el proveedor real con direcciones
+ * de correo descartables (mailinator.com): eso fue justo lo que hizo que Brevo suspendiera
+ * la cuenta por "actividad sospechosa".
  */
-class BrevoEmailSenderTest {
+class SendGridEmailSenderTest {
 
     private static final String API_KEY = "clave-de-prueba";
     private static final String REMITENTE = "no-reply@divvy.app";
@@ -38,8 +44,8 @@ class BrevoEmailSenderTest {
     @EnableAsync
     static class Config {
         @Bean
-        BrevoEmailSender brevoEmailSender(RestClient.Builder restClientBuilder) {
-            return new BrevoEmailSender(restClientBuilder, API_KEY, REMITENTE);
+        SendGridEmailSender sendGridEmailSender(RestClient.Builder restClientBuilder) {
+            return new SendGridEmailSender(restClientBuilder, API_KEY, REMITENTE);
         }
     }
 
@@ -52,17 +58,17 @@ class BrevoEmailSenderTest {
     }
 
     @Test
-    void enviar_noBloqueaAlLlamadorAunqueBrevoSeaLento() {
+    void enviar_noBloqueaAlLlamadorAunqueSendGridSeaLento() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
+        server.expect(requestTo("https://api.sendgrid.com/v3/mail/send"))
                 .andRespond(request -> {
                     try {
                         Thread.sleep(RESPUESTA_LENTA_MS);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                    return withSuccess("{}", MediaType.APPLICATION_JSON).createResponse(request);
+                    return withStatus(HttpStatus.ACCEPTED).createResponse(request);
                 });
 
         try (AnnotationConfigApplicationContext ctx = contexto(builder)) {
@@ -79,20 +85,22 @@ class BrevoEmailSenderTest {
     }
 
     @Test
-    void enviar_mandaElRequestCorrectoABrevo() throws InterruptedException {
+    void enviar_mandaElRequestCorrectoASendGrid() throws InterruptedException {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
+        server.expect(requestTo("https://api.sendgrid.com/v3/mail/send"))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(header("api-key", API_KEY))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.sender.email").value(REMITENTE))
-                .andExpect(jsonPath("$.sender.name").value("Divvy"))
-                .andExpect(jsonPath("$.to[0].email").value("ana@test.com"))
+                .andExpect(jsonPath("$.from.email").value(REMITENTE))
+                .andExpect(jsonPath("$.from.name").value("Divvy"))
+                .andExpect(jsonPath("$.personalizations[0].to[0].email").value("ana@test.com"))
                 .andExpect(jsonPath("$.subject").value("Recupera tu contraseña"))
-                .andExpect(jsonPath("$.htmlContent").value("<p>código <b>123456</b></p>"))
-                .andExpect(jsonPath("$.textContent").value("código 123456"))
-                .andRespond(withSuccess("{\"messageId\":\"abc\"}", MediaType.APPLICATION_JSON));
+                .andExpect(jsonPath("$.content[0].type").value("text/plain"))
+                .andExpect(jsonPath("$.content[0].value").value("código 123456"))
+                .andExpect(jsonPath("$.content[1].type").value("text/html"))
+                .andExpect(jsonPath("$.content[1].value").value("<p>código <b>123456</b></p>"))
+                .andRespond(withStatus(HttpStatus.ACCEPTED));
 
         try (AnnotationConfigApplicationContext ctx = contexto(builder)) {
             EmailSender emailSender = ctx.getBean(EmailSender.class);
@@ -104,17 +112,17 @@ class BrevoEmailSenderTest {
     }
 
     @Test
-    void enviar_siBrevoFalla_noPropagaLaExcepcion() throws InterruptedException {
+    void enviar_siSendGridFalla_noPropagaLaExcepcion() throws InterruptedException {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
+        server.expect(requestTo("https://api.sendgrid.com/v3/mail/send"))
                 .andRespond(withBadRequest());
 
         try (AnnotationConfigApplicationContext ctx = contexto(builder)) {
             EmailSender emailSender = ctx.getBean(EmailSender.class);
 
             assertThatCode(() -> emailSender.enviar("ana@test.com", "Asunto", "<p>cuerpo</p>"))
-                    .as("un error de Brevo se registra en el log, pero nunca debe romper al llamador "
+                    .as("un error de SendGrid se registra en el log, pero nunca debe romper al llamador "
                             + "(forgot-password siempre responde 200)")
                     .doesNotThrowAnyException();
 
